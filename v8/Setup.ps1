@@ -2,7 +2,12 @@ $useXDB=$false
 $useSolr=$false
 $useLinux=$false
 $ipRange="192.168.30"
+$hostname="sitecore.local"
+$sitecoreZip=""
+$licenseFile=""
 
+function AskConfiguration
+{
 # Look for Sitecore zip in Setup Folder
 $sitecoreZip = Get-Item "$PWD\Setup\Sitecore 8.* rev. *.zip" -ErrorAction SilentlyContinue | Select-Object -First 1 -ErrorAction SilentlyContinue
 if(-Not $sitecoreZip -or -Not (Test-Path $sitecoreZip))
@@ -118,4 +123,78 @@ while($done -ne $true);
 Write-Host "Using IP Range $ipRange"
 Write-Host ""
 
-# Extract sitecore zip file to (Setup/tmp/
+# Ask for host name
+$done = $false
+do
+{
+	$hostn = Read-Host "What hostname do you want to use? (i.e. sitecore.local)"
+	if($hostn -match "^([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])(\.([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]{0,61}[a-zA-Z0-9]))*$")
+	{
+		$done = $true
+		$hostname = $hostn
+	}
+	else
+	{
+		Write-Host "Invalid Hostname"
+	}
+}
+while($done -ne $true)
+
+
+
+# Extract sitecore zip file to (Setup/tmp/site)
+}
+
+function PrintConfiguration
+{
+	Write-Host "Configuration:"
+	Write-Host "Sitecore Zip: $sitecoreZip"
+	Write-Host "License File: $licenseFile"
+	Write-Host "IP Range: $ipRange"
+	Write-Host "Hostnames:"
+	Write-Host "`tIIS: $hostname"
+	Write-Host "`tSQL: db.$hostname"
+	if($useXDB -eq $true)
+	{
+		Write-Host "`tMongo: mongo.$hostname"
+	}
+	if($useSolr -eq $true)
+	{
+		Write-Host "`tSolr: solr.$hostname"
+
+		if($useLinux -eq $true)
+		{
+			Write-Host "Solr will use linux based image"
+		}
+		else 
+		{
+			Write-Host "Solr will use windows based image"		
+		}
+	}
+
+	do
+	{
+		$s = Read-Host "Does your configuration look good? [y/n]"
+		if($s -eq "y")
+		{
+			return $s
+		}
+		elseif($s -eq "n")
+		{
+			return $n
+		}
+	}
+	while ($true) 
+}
+
+$configured = $false
+do
+{
+	AskConfiguration
+	$isDone = PrintConfiguration
+	if($isDone -eq "y")
+	{
+		$configured = $true
+	}
+}
+while($configured -eq $false)
